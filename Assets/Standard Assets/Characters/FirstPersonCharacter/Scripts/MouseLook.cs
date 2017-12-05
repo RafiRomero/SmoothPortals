@@ -72,11 +72,6 @@ namespace UnityStandardAssets.Characters.FirstPerson
                 InternalLockUpdate();
         }
 
-        public void Rotate(Quaternion q)
-        {
-            m_CharacterTargetRot *= q;
-        }
-
         private void InternalLockUpdate()
         {
             if(Input.GetKeyUp(KeyCode.Escape))

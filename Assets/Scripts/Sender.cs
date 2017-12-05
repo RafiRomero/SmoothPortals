@@ -1,46 +1,38 @@
-﻿using UnityEngine;
-using System.Collections;
+using UnityEngine;
 
 public class Sender : MonoBehaviour {
 
-    public GameObject player;
     public GameObject receiver;
-
-    private float prevDot = 0;
-    private bool playerOverlapping = false;
 
     void Start () {
     }
 
-    void FixedUpdate()
+    private PortalUser portalUser;
+    void FixedUpdate() //https://docs.unity3d.com/ScriptReference/MonoBehaviour.FixedUpdate.html "FixedUpdate should be used instead of Update when dealing with Rigidbody" (so, for physical objects, you might want this)
     {
-        if (playerOverlapping) {
-            var currentDot = Vector3.Dot(transform.up, player.transform.position - transform.position);
+        if (portalUser != null) {
+            var currentDot = Vector3.Dot(transform.up, portalUser.transform.position - transform.position);
 
             if (currentDot < 0) // only transport the player once he's moved across plane
             {
-                teleport();
-                playerOverlapping = false;
-            }
-               
-            prevDot = currentDot;
-        }
-    }
+                // transport them to the equivalent position in the other portal
+				Vector3 playerRelativeToPortalPosLocal = transform.InverseTransformPoint(portalUser.transform.position);
+				playerRelativeToPortalPosLocal.x = -playerRelativeToPortalPosLocal.x; //Prevent "mirroring"
+				var newPosition = receiver.transform.TransformPoint(playerRelativeToPortalPosLocal);
 
-    // transport player to the equivalent position in the other portal
-	private void teleport()
-    {
-        // get relative difference between two rotations (i.e. the quaternion that would turn this rotation into that rotation)
-        // so say we want diff which multiplying q1 by would give us q2 then..
-        // diff* q1 = q2--->diff = q2 * inverse(q1)
-        Quaternion relativeDiff = receiver.transform.rotation * Quaternion.Inverse(transform.rotation);
-        relativeDiff *= Quaternion.Euler(0, 180, 0);
-        
-        Vector3 positionOffset = player.transform.position - transform.position;
-        positionOffset = relativeDiff * positionOffset;
-        player.GetComponent<UnityStandardAssets.Characters.FirstPerson.FirstPersonController>().Rotate(relativeDiff);
-        
-        player.transform.position = receiver.transform.position + positionOffset;
+				// And sort out new camera facing
+				var receiverForwardAxis = receiver.transform.up;	//Collision-plane has a rotation of -90 in X, which transposes the axes we'd normally consider
+				var senderForwardAxis = transform.up;				//Collision-plane has a rotation of -90 in X, which transposes the axes we'd normally consider
+				var receiverUpAxis = receiver.transform.forward;	//Collision-plane has a rotation of -90 in X, which transposes the axes we'd normally consider
+				var portalRotationalDifference = Quaternion.FromToRotation(senderForwardAxis, -receiverForwardAxis); //https://answers.unity.com/questions/702200/finding-the-rotation-between-two-gameobjects.html
+				var newFacingDirection = portalRotationalDifference * portalUser.transform.forward;
+				var newRotation = Quaternion.LookRotation(newFacingDirection, receiverUpAxis);
+
+				portalUser.Teleport(newPosition, newRotation);
+
+				portalUser = null;
+            }
+        }
     }
 
 
@@ -48,7 +40,7 @@ public class Sender : MonoBehaviour {
     {
         if (other.tag == "Player")
         {
-            playerOverlapping = true;
+		    portalUser = other.GetComponentInParent<PortalUser>();
         }
     }
 
@@ -56,7 +48,7 @@ public class Sender : MonoBehaviour {
     {
         if (other.tag == "Player")
         {
-            playerOverlapping = false;
+		    portalUser = null;
         }
     }
 }
