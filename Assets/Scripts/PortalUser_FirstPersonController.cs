@@ -2,7 +2,8 @@ using UnityEngine;
 
 public class PortalUser_FirstPersonController : PortalUser {
 	private UnityStandardAssets.Characters.FirstPerson.FirstPersonController fpsController; 
-	void Start () {
+	public override void Start() {
+		base.Start();
 		fpsController = GetComponent<UnityStandardAssets.Characters.FirstPerson.FirstPersonController>();
 	}
 

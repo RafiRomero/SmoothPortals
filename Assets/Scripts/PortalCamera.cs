@@ -2,7 +2,7 @@ using UnityEngine;
 
 public class PortalCamera : MonoBehaviour {
 
-    public GameObject playerCamera;
+    public Camera playerCamera;
     public MeshRenderer renderPlane;
 	public Shader portalShader;
     public GameObject portal;
@@ -10,11 +10,17 @@ public class PortalCamera : MonoBehaviour {
 
     // Use this for initialization
     void Start () {
+		if (playerCamera == null)
+			playerCamera = GameObject.FindGameObjectWithTag("MainCamera").GetComponent<Camera>();
+
+		if (playerCamera == null)
+			Debug.LogError("PortalCamera component does not have a playerCamera assigned, nor could it find one.");
+
 		var camera = GetComponent<Camera>();
         if (camera.targetTexture != null)
             camera.targetTexture.Release();
 
-        camera.targetTexture = new RenderTexture(Screen.width, Screen.height, 24);
+        camera.targetTexture = new RenderTexture(playerCamera.pixelWidth, playerCamera.pixelHeight, 24); //###:TODO - Really need a function that we can call when screen resolution changes; also, want to allow for multiple cameras (split-screen multiplayer)
 
 		renderPlane.material = new Material (portalShader);
         renderPlane.material.mainTexture = camera.targetTexture;	
